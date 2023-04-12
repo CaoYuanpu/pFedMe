@@ -3,7 +3,7 @@ import os
 
 from FLAlgorithms.users.userpFedMe import UserpFedMe
 from FLAlgorithms.servers.serverbase import Server
-from utils.model_utils import read_data, read_user_data
+from utils.model_utils import read_data, read_user_data, dir_data
 import numpy as np
  
 # Implementation for pFedMe Server
@@ -14,13 +14,21 @@ class pFedMe(Server):
         super().__init__(device, dataset,algorithm, model[0], batch_size, learning_rate, beta, lamda, num_glob_iters,
                          local_epochs, optimizer, num_users, times)
 
-        # Initialize data for all  users
-        data = read_data(dataset)
-        total_users = len(data[0])
+        # # Initialize data for all  users
+        # data = read_data(dataset)
+        # total_users = len(data[0])
+
+        trainsets, testsets = dir_data(dataset, num_clients=10, alpha=0.01, data_path='./data', device='cuda:0')
+        total_users = len(trainsets)
+        
         self.K = K
         self.personal_learning_rate = personal_learning_rate
         for i in range(total_users):
-            id, train , test = read_user_data(i, data, dataset)
+            # id, train , test = read_user_data(i, data, dataset)
+            
+            id = i
+            train, test = trainsets[i], testsets[i]
+            
             user = UserpFedMe(device, id, train, test, model, batch_size, learning_rate, beta, lamda, local_epochs, optimizer, K, personal_learning_rate)
             self.users.append(user)
             self.total_train_samples += user.train_samples

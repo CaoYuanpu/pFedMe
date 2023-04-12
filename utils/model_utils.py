@@ -316,6 +316,93 @@ def read_user_data(index,data,dataset):
     test_data = [(x, y) for x, y in zip(X_test, y_test)]
     return id, train_data, test_data
 
+def dir_data(dataset, num_clients, alpha, data_path, device='cuda:0'):
+    if dataset == 'CIFAR10':
+        channel = 3
+        # im_size = (32, 32)
+        im_size = 32
+        num_classes = 10
+        mean = [0.4914, 0.4822, 0.4465]
+        std = [0.2023, 0.1994, 0.2010]
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)])
+        train_data_whole = datasets.CIFAR10(data_path, train=True, download=True, transform=transform) # no augmentation
+        test_data_whole = datasets.CIFAR10(data_path, train=False, download=True, transform=transform)
+        class_names = train_data_whole.classes
+
+    elif dataset == 'CIFAR100':
+        channel = 3
+        # im_size = (32, 32)
+        im_size = 32
+        num_classes = 100
+        mean = [0.4914, 0.4822, 0.4465]
+        std = [0.2023, 0.1994, 0.2010]
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)])
+        train_data_whole = datasets.CIFAR100(data_path, train=True, download=True, transform=transform) # no augmentation
+        test_data_whole = datasets.CIFAR100(data_path, train=False, download=True, transform=transform)
+        class_names = train_data_whole.classes
+
+    order = np.argsort(train_data_whole.targets)
+    ordered_train_data = train_data_whole.data[order]
+    ordered_train_label = np.array(train_data_whole.targets)[order]
+    num_samples_c = int(len(ordered_train_label) / num_classes)
+
+    test_data = test_data_whole.data
+    test_label = np.array(test_data_whole.targets)
+    num_test_samples_client = int(len(test_label) / num_clients)
+    
+    print(f'load dataset: [channel] {channel} [im size] {im_size} [num_classes] {num_classes} [num_samples / cls] {num_samples_c} [num_test_samples / clients] {num_test_samples_client}')
+
+    
+    # data partition
+    alpha_list = [alpha for _ in range(num_clients)]
+    total_number = 0
+
+    min_size = 0
+    while min_size < 2500:
+        client_index_list = [[] for _ in range(num_clients)]
+        total_number = 0
+        for i in range(num_classes):
+            client_port = np.random.dirichlet(alpha=alpha_list)
+            number = client_port * num_samples_c
+            number = np.int32(number)
+            left = num_samples_c - number.sum()
+            if left > 0:
+                lucky_client = np.random.randint(low=0, high=num_clients)
+                number[lucky_client] += left
+            total_number += number
+            for j in range(num_clients):
+                client_index_list[j].extend(list(range(i*num_samples_c+number[:j].sum(),i*num_samples_c+number[:j+1].sum())))
+        min_size = min([len(idx_j) for idx_j in client_index_list])
+
+    print()
+    print("Num of training samples / client:")
+    print(total_number, sum(total_number))
+    print("Details of data partition:")
+    cls_counts = {}
+    for i, client_index in enumerate(client_index_list):
+        cls_counts[i] = {}
+        for idx in client_index:
+            cls_ = idx // num_samples_c
+            if cls_ not in cls_counts[i]:
+                cls_counts[i][cls_] = 1
+            else:
+                cls_counts[i][cls_] += 1
+    print(cls_counts)
+    print()
+    
+    # init distiller and clients
+    trainsets = []
+    testsets = []
+    for i in range(num_clients):
+        client_dataset = OrderDataset(ordered_train_data[client_index_list[i]],ordered_train_label[client_index_list[i]], transform, device=device)
+        # client_dataloader = DataLoader(client_dataset, batch_size=500, shuffle=True)
+        trainsets.append(client_dataset)
+
+        test_dataset = OrderDataset(test_data[i*num_test_samples_client:(i+1)*num_test_samples_client],test_label[i*num_test_samples_client:(i+1)*num_test_samples_client], transform, device=device)
+        # test_dataloader = DataLoader(test_dataset, batch_size=100, shuffle=False)
+        testsets.append(test_dataset)
+    return trainsets, testsets
+
 class Metrics(object):
     def __init__(self, clients, params):
         self.params = params
