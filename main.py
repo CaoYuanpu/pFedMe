@@ -33,8 +33,8 @@ def main(dataset, algorithm, model, batch_size, learning_rate, beta, lamda, num_
             if(dataset == "Mnist"):
                 model = Net().to(device), model
             elif(dataset == "Cifar10"):
-                # model = CNNCifar(10).to(device), model
-                model = ConvNet(channel=3, num_classes=10, net_width=128, net_depth=3, net_act='relu', net_norm='instancenorm', net_pooling='avgpooling').to(device), model
+                model = CNNCifar(10).to(device), model
+                # model = ConvNet(channel=3, num_classes=10, net_width=128, net_depth=3, net_act='relu', net_norm='instancenorm', net_pooling='avgpooling').to(device), model
             
         if(model == "dnn"):
             if(dataset == "Mnist"):
