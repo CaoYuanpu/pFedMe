@@ -167,7 +167,7 @@ class ConvNet(nn.Module):
         out = self.features(x)
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
-        return out
+        return F.log_softmax(out, dim=1)
 
     def _get_activation(self, net_act):
         if net_act == 'sigmoid':
