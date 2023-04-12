@@ -318,6 +318,23 @@ def read_user_data(index,data,dataset):
     test_data = [(x, y) for x, y in zip(X_test, y_test)]
     return id, train_data, test_data
 
+class OrderDataset(Dataset):
+    def __init__(self, data,label,transformer=None,device="cuda:0"):
+        self.data = data
+        self.label = torch.from_numpy(label).squeeze(0).to(device).long()
+        self.device =device
+        self.transformer = transformer
+
+    def __len__(self):
+        return len(self.label)
+
+    def __getitem__(self, idx):
+        image = self.data[idx]
+        # image = Image.fromarray(image)
+        if self.transformer:
+            image = self.transformer(image)
+        return image.to(self.device), self.label[idx].to(self.device)
+
 def dir_data(dataset, num_clients, alpha, data_path, device='cuda:0'):
     if dataset == 'Cifar10':
         channel = 3
