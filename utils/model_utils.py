@@ -4,10 +4,12 @@ import os
 import torch
 import torch.nn as nn
 import torchvision
-import torchvision.transforms as transforms
+# import torchvision.transforms as transforms
+from torchvision import datasets, transforms
 from tqdm import trange
 import numpy as np
 import random
+from torch.utils.data import Dataset, DataLoader
 
 IMAGE_SIZE = 28
 IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
