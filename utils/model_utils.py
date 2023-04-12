@@ -317,7 +317,7 @@ def read_user_data(index,data,dataset):
     return id, train_data, test_data
 
 def dir_data(dataset, num_clients, alpha, data_path, device='cuda:0'):
-    if dataset == 'CIFAR10':
+    if dataset == 'cifar10':
         channel = 3
         # im_size = (32, 32)
         im_size = 32
