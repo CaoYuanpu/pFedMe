@@ -333,7 +333,8 @@ class OrderDataset(Dataset):
         # image = Image.fromarray(image)
         if self.transformer:
             image = self.transformer(image)
-        return image.to(self.device), self.label[idx].to(self.device)
+        # return image.to(self.device), self.label[idx].to(self.device)
+        return image, self.label[idx]
 
 def dir_data(dataset, num_clients, alpha, data_path, device='cuda:0'):
     if dataset == 'Cifar10':
